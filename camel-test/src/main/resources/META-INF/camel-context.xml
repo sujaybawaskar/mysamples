@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:camel="http://camel.apache.org/schema/spring"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring-2.11.1.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.1.xsd">
+	<context:component-scan base-package="org.mysamples"/>
+	<camel:camelContext id="camelContext">
+		<camel:template id="producer"/>
+		<camel:endpoint id="start" uri="direct:start"/>
+		<camel:endpoint id="myqueue" uri="seda://myqueue?size=10&amp;waitForTaskToComplete=Always"/>
+		<camel:route id="myRoute">
+			<camel:from ref="myqueue"/>
+			<camel:log message="from seda"/>
+			<camel:process ref="myProcessor"/>
+		</camel:route>
+	</camel:camelContext>
+	<bean id="myProcessor" class="org.mysamples.camel.processors.MyProcessor"/>
+
+</beans>
