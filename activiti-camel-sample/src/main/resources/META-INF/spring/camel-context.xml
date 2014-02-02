@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:components="http://www.activiti.org/schema/spring/components"
+	xmlns:jms="http://www.springframework.org/schema/jms" xmlns:broker="http://activemq.apache.org/schema/core"
+	xsi:schemaLocation="http://www.springframework.org/schema/jms http://www.springframework.org/schema/jms/spring-jms-3.2.xsd
+		http://activemq.apache.org/schema/core http://activemq.apache.org/schema/core/activemq-core-5.9.0.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring-2.12.2.xsd
+		http://www.activiti.org/schema/spring/components http://www.activiti.org/schema/spring/components/activiti.xsd">
+	<camelContext id="camel" xmlns="http://camel.apache.org/schema/spring">
+		<template id="producer"/>
+		<route>
+			<from id="frontEndRoute" uri="jms://frontEndQueue"/>
+			<log message="${body}"/>
+		</route>
+	</camelContext>
+	<bean id="jms" class="org.apache.activemq.camel.component.ActiveMQComponent">
+		<property name="brokerURL" value="vm://mq-broker"/>
+	</bean>
+	<bean id="mysql-ds" class="org.apache.commons.dbcp.BasicDataSource"
+		destroy-method="close">
+		<property name="driverClassName" value="com.mysql.jdbc.Driver" />
+		<property name="url"
+			value="jdbc:mysql://localhost:3306/activemq?relaxAutoCommit=true" />
+		<property name="username" value="activemq" />
+		<property name="password" value="activemq" />
+		<property name="maxActive" value="200" />
+		<property name="poolPreparedStatements" value="true" />
+	</bean>
+	<broker:broker useJmx="true" persistent="true"
+		brokerName="mq-broker" tmpDataDirectory="/tmp">
+		<broker:destinationPolicy>
+			<broker:policyMap>
+				<broker:policyEntries>
+					<broker:policyEntry queue=">"
+						producerFlowControl="false" />
+				</broker:policyEntries>
+			</broker:policyMap>
+		</broker:destinationPolicy>
+		<broker:persistenceAdapter>
+			<broker:jdbcPersistenceAdapter dataSource="#mysql-ds">
+			</broker:jdbcPersistenceAdapter>
+
+		</broker:persistenceAdapter>
+		<!-- <broker:systemUsage> <broker:systemUsage> <broker:memoryUsage> <broker:memoryUsage 
+			limit="20 mb" /> </broker:memoryUsage> <broker:storeUsage> <broker:storeUsage 
+			limit="4 gb"/> </broker:storeUsage> <broker:tempUsage> <broker:tempUsage 
+			limit="100 mb" /> </broker:tempUsage> </broker:systemUsage> </broker:systemUsage> -->
+		<broker:transportConnectors>
+			<!-- expose a VM transport for in-JVM transport between AMQ and Camel 
+				on the server side -->
+
+			<broker:transportConnector name="vm"
+				uri="vm://mq-broker" />
+			<broker:transportConnector name="openwire"
+				uri="tcp://127.0.0.1:61616" enableStatusMonitor="true" />
+		</broker:transportConnectors>
+	</broker:broker>
+</beans>
